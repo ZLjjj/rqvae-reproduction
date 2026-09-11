@@ -1,0 +1,59 @@
+{
+  "data_npy": "/mnt/yangjunli1/sid-gen/video-data-v2/text_format_embedding_gpu0.npy",
+  "meta_jsonl": "/mnt/yangjunli1/sid-gen/video-data-v2/meta_gpu0.jsonl",
+  "results_root": "scripts/benchmark/results",
+  "run_name": "video_v2_rqvae_l1sinkhorn",
+  "device": "cuda:0",
+  "batch_size": 2048,
+  "num_workers": 4,
+  "seed": 2024,
+
+  "train_defaults": {
+    "epochs": 40,
+    "lr": 0.001,
+    "eval_step": 1,
+    "learner": "AdamW",
+    "lr_scheduler_type": "linear",
+    "warmup_epochs": 5,
+    "weight_decay": 0.0001,
+    "save_limit": 3,
+
+    "dropout_prob": 0.0,
+    "bn": false,
+    "loss_type": "mse",
+    "quant_loss_weight": 1.0,
+    "beta": 0.5,
+
+    "kmeans_init": true,
+    "kmeans_init_max_samples": 200000,
+    "kmeans_init_seed": 0,
+    "kmeans_init_dedup": true,
+    "kmeans_iters": 20,
+    "sk_iters": 50,
+
+    "rqvae": {
+      "num_emb_list": [1024, 1024, 1024, 1024],
+      "e_dim": 128,
+      "layers": [512, 256, 128],
+      "sk_epsilons": [0.003, 0.0, 0.0, 0.0],
+      "ema_codebook": true,
+      "ema_decay": 0.99,
+      "ema_eps": 1e-05
+    }
+  },
+
+  "infer_defaults": {
+    "use_sk": false
+  },
+
+  "strategies": [
+    {
+      "name": "rqvae",
+      "enabled": true,
+      "train": true,
+      "infer": true,
+      "train_overrides": {},
+      "infer_overrides": {}
+    }
+  ]
+}
