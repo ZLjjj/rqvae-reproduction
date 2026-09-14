@@ -258,16 +258,17 @@ def sinkhorn_uniform_mapping_last_level(
 def pack_hardcode(meta: dict[str, list], base: int, bsz: int):
     # Keep consistent with torch models (src/models/*):
     # - publish_year_bucket = 2035 - year, bucket in [0,125] else 0
-    # - index = (publish_year_bucket & 0x7F) << 2 | (saletype & 0x3)
+    # - paid flag is 1 bit; all non-paid/unknown values map to 0
+    # - index = (publish_year_bucket & 0x7F) << 1 | (paid & 0x1)
     s = np.asarray(meta["saletype"][base : base + bsz], dtype=np.int64)
     year = np.asarray(meta["publish_year"][base : base + bsz], dtype=np.int64)
 
-    s = np.clip(s, 0, 3)
+    s = (s == 1).astype(np.int64)
 
     bucket = 2035 - year
     bucket = np.where((bucket >= 0) & (bucket <= 125), bucket, 0)
 
-    return ((bucket.astype(np.int64) & 0x7F) << 2) | (s & 0x3)
+    return ((bucket.astype(np.int64) & 0x7F) << 1) | (s & 0x1)
 
 
 def _normalize_sale(v):
@@ -275,13 +276,11 @@ def _normalize_sale(v):
         return 0
     if isinstance(v, str):
         t = v.strip().upper()
-        if t == "FREE":
+        if t in {"PAY", "PAID", "CHARGE", "CHARGED", "付费", "收费", "TRUE", "YES", "Y"}:
             return 1
-        if t == "PAY":
-            return 2
         if t.isdigit():
             try:
-                return int(t)
+                return 1 if int(t) == 1 else 0
             except Exception:
                 return 0
         return 0

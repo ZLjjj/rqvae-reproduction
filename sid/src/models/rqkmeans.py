@@ -7,8 +7,7 @@ from .rq import ResidualVectorQuantizer
 class RQKMeans(nn.Module):
     """5-codebook residual quantizer: 4 learned RQ layers (+4th balanced), 5th hard-coded.
 
-    Note: the last layer packs (sale_type, publish_year_bucket) into a codebook index.
-    If you expand HardCodeMapper bits, make sure num_emb_list[4] matches (e.g. 512 for 9 bits).
+    Note: the last layer packs a binary paid flag and publish_year_bucket into [0, 255].
     """
 
     def __init__(
@@ -65,7 +64,7 @@ class RQKMeans(nn.Module):
 
 
 class HardCodeMapper(nn.Module):
-    """Pack sale_type (0-3) and publish_year_bucket (0-127) into a single codebook index.
+    """Pack a binary paid flag and publish_year_bucket into [0, 255].
 
     - publish_year_bucket definition:
         bucket = 2035 - year
@@ -81,7 +80,7 @@ class HardCodeMapper(nn.Module):
       - numeric strings (e.g. "0", "2") keep the original int mapping
     """
 
-    def __init__(self, bits: int = 9):
+    def __init__(self, bits: int = 8):
         super().__init__()
         self.bits = bits
         self.max_index = (1 << bits) - 1
@@ -112,16 +111,14 @@ class HardCodeMapper(nn.Module):
             return 0
         if isinstance(v, str):
             s = v.strip()
-            if s.isdigit():
-                return int(s)
             u = s.upper()
-            if u == "FREE":
+            if u in {"PAY", "PAID", "CHARGE", "CHARGED", "付费", "收费", "TRUE", "YES", "Y"}:
                 return 1
-            if u == "PAY":
-                return 2
+            if u.isdigit():
+                return 1 if int(u) == 1 else 0
             return 0
         try:
-            return int(v)
+            return 1 if int(v) == 1 else 0
         except Exception:
             return 0
 
@@ -153,16 +150,16 @@ class HardCodeMapper(nn.Module):
         sale_vals = self._pad_to_batch(sale_vals, batch, fill=0)
         publish_vals = self._pad_to_batch(publish_vals, batch, fill=0)
 
-        # keep 2 bits for sale_type (0..3) for forward compatibility
-        st = torch.tensor([min(max(self._parse_sale_type(v), 0), 3) for v in sale_vals], device=device, dtype=torch.long)
+        # One bit only: paid=1; unknown and all non-paid values are free=0.
+        st = torch.tensor([self._parse_sale_type(v) for v in sale_vals], device=device, dtype=torch.long)
 
         # year -> bucket in [0, 125], otherwise 0
         year = torch.tensor([self._parse_int(v, 0) for v in publish_vals], device=device, dtype=torch.long)
         bucket = 2035 - year
         bucket = torch.where((bucket >= 0) & (bucket <= 125), bucket, torch.zeros_like(bucket))
 
-        # 7 bits for bucket (0..127) + 2 bits for sale_type (0..3) => 9 bits
-        idx_val = ((bucket & 0x7F) << 2) | (st & 0x3)
+        # 7 bits for bucket (0..127) + 1 bit paid flag => 8 bits
+        idx_val = ((bucket & 0x7F) << 1) | (st & 0x1)
         idx_val = torch.clamp(idx_val, max=self.max_index)
         idx = idx_val.view(batch, 1)
 

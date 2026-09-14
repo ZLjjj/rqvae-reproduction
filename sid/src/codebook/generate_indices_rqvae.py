@@ -88,15 +88,10 @@ def load_model(ckpt_path: str, model_type: str, device: str, *, in_dim_fallback:
             **common_kwargs,
         )
     else:
-        # rqkmeans checkpoints were historically trained with a 256-sized hardcode last level.
-        # If HardCodeMapper is expanded (e.g. 9 bits -> 512), ensure inference uses a compatible
-        # num_emb_list[4] even when the checkpoint args didn't record it.
+        # rqkmeans checkpoints use a 256-sized binary paid/year hardcode last level.
         num_emb_list = common_kwargs.get("num_emb_list")
         if not num_emb_list:
-            num_emb_list = [1024, 1024, 1024, 1024, 512]
-        elif len(num_emb_list) >= 5 and num_emb_list[4] == 256:
-            num_emb_list = list(num_emb_list)
-            num_emb_list[4] = 512
+            num_emb_list = [1024, 1024, 1024, 1024, 256]
         common_kwargs["num_emb_list"] = num_emb_list
         model = RQKMeans(**common_kwargs)
 
@@ -200,7 +195,7 @@ def main():
     out_metrics = out_dir / "metrics.json"
 
     meta_out_iter = _iter_meta(args.meta_jsonl) if args.meta_jsonl else None
-    prefix = ["<a_{}>", "<b_{}>", "<c_{}>", "<d_{}>", "<e_{}>"]  # 5th layer may exceed 255 (hardcode uses 9 bits)
+    prefix = ["<a_{}>", "<b_{}>", "<c_{}>", "<d_{}>", "<e_{}>"]  # 5th layer is 8-bit (0..255)
     with out_jsonl.open("w", encoding="utf-8") as f:
         for idx, row in enumerate(codes):
             sid = [prefix[i].format(int(v)) for i, v in enumerate(row)]
@@ -236,21 +231,13 @@ def main():
                         return 0
                     if isinstance(v, str):
                         t = v.strip().upper()
-                        if t == "FREE":
+                        if t in {"PAY", "PAID", "CHARGE", "CHARGED", "付费", "收费", "TRUE", "YES", "Y"}:
                             return 1
-                        if t == "PAY":
-                            return 2
                         if t.isdigit():
-                            try:
-                                return int(t)
-                            except Exception:
-                                return 0
+                            return 1 if int(t) == 1 else 0
                         return 0
                     try:
-                        iv = int(v)
-                        if iv in (0, 1, 2):
-                            return iv
-                        return 0
+                        return 1 if int(v) == 1 else 0
                     except Exception:
                         return 0
 

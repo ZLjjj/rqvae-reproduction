@@ -9,7 +9,7 @@ from .rq import ResidualVectorQuantizer
 class RQVAE(nn.Module):
     """5-codebook Residual Quantization VAE.
 
-    Layout: 5 RQ layers, only the 4th uses Sinkhorn balancing, 5th is hard-coded (saletype/publish_year packed into 8 bits).
+    Layout: 5 layers: 4 learned RQ layers plus a metadata hardcode layer.
     """
 
     def __init__(
@@ -121,7 +121,7 @@ class RQVAE(nn.Module):
 
 
 class HardCodeMapper(nn.Module):
-    """Pack sale_type (0-3) and publish_year_bucket (0-127) into a single codebook index.
+    """Pack paid flag (1 bit) and publish_year_bucket (7 bits) into [0, 255].
 
     - publish_year_bucket definition:
         bucket = 2035 - year
@@ -131,15 +131,13 @@ class HardCodeMapper(nn.Module):
     Backward compatible field names for sale_type:
       - saletype, sale_type, pay_type, paytype
 
-    Value mapping (case-insensitive):
-      - "FREE" -> 1
-      - "PAY"  -> 2
-      - numeric strings (e.g. "0", "2") keep the original int mapping
+    Sale type mapping is deliberately binary: values positively identifying
+    paid content map to 1; every other/unknown value maps to free (0).
 
-    index = (publish_year_bucket & 0x7F) << 2 | (sale_type & 0x3)
+    index = (publish_year_bucket & 0x7F) << 1 | (is_paid & 0x1)
     """
 
-    def __init__(self, bits: int = 9):
+    def __init__(self, bits: int = 8):
         super().__init__()
         self.bits = bits
         self.max_index = (1 << bits) - 1
@@ -166,20 +164,19 @@ class HardCodeMapper(nn.Module):
 
     @staticmethod
     def _parse_sale_type(v) -> int:
+        """Return binary paid flag; unknown values are treated as free."""
         if v is None:
             return 0
         if isinstance(v, str):
             s = v.strip()
-            if s.isdigit():
-                return int(s)
             u = s.upper()
-            if u == "FREE":
+            if u in {"PAY", "PAID", "CHARGE", "CHARGED", "付费", "收费", "TRUE", "YES", "Y"}:
                 return 1
-            if u == "PAY":
-                return 2
+            if u.isdigit():
+                return 1 if int(u) == 1 else 0
             return 0
         try:
-            return int(v)
+            return 1 if int(v) == 1 else 0
         except Exception:
             return 0
 
@@ -211,13 +208,14 @@ class HardCodeMapper(nn.Module):
         sale_vals = self._pad_to_batch(sale_vals, batch, fill=0)
         publish_vals = self._pad_to_batch(publish_vals, batch, fill=0)
 
-        st = torch.tensor([min(max(self._parse_sale_type(v), 0), 3) for v in sale_vals], device=device, dtype=torch.long)
+        # One bit only: paid=1, everything else (including unknown) is free=0.
+        st = torch.tensor([self._parse_sale_type(v) for v in sale_vals], device=device, dtype=torch.long)
 
         year = torch.tensor([self._parse_int(v, 0) for v in publish_vals], device=device, dtype=torch.long)
         bucket = 2035 - year
         bucket = torch.where((bucket >= 0) & (bucket <= 125), bucket, torch.zeros_like(bucket))
 
-        idx_val = ((bucket & 0x7F) << 2) | (st & 0x3)
+        idx_val = ((bucket & 0x7F) << 1) | (st & 0x1)
         idx_val = torch.clamp(idx_val, max=self.max_index)
         idx = idx_val.view(batch, 1)
 
