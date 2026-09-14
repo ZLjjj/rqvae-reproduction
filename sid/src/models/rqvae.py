@@ -34,7 +34,7 @@ class RQVAE(nn.Module):
         super().__init__()
 
         self.in_dim = in_dim
-        self.num_emb_list = num_emb_list or [1024, 1024, 1024, 1024, 256]
+        self.num_emb_list = num_emb_list or [1024, 1024, 1024, 1024, 512]
         self.e_dim = e_dim
         self.layers = layers or [512, 256, 128]
         self.dropout_prob = dropout_prob
