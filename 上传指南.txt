@@ -1,0 +1,23 @@
+超简单上传指南
+
+步骤1: 创建仓库
+访问: https://github.com/new
+填写: rqvae-reproduction
+点击: Create repository
+
+步骤2: 获取Token
+访问: https://github.com/settings/tokens/new
+勾选: repo
+点击: Generate token
+复制 token
+
+步骤3: 运行命令
+cd C:\Users\dszlj\Desktop\gensearchrec-main-0901\github_upload
+git config user.name "ZLjjj"
+git remote add origin https://github.com/ZLjjj/rqvae-reproduction.git
+git branch -M main
+git push -u origin main
+
+输入 token 作为密码
+
+完成！

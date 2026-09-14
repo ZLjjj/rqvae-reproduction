@@ -1,0 +1,22 @@
+# Data and artifacts (large/non-source)
+data/
+results/
+# keep readme/structure; adjust if partial sync needed
+!README.md
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Logs and checkpoints
+*.log
+*.pth
+*.ckpt
+*.pt
+*.bin
+swanlog/
+
+# Env
+.env
+venv/
+.venv/

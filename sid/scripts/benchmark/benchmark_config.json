@@ -1,0 +1,128 @@
+{
+  "data_npy": "/mnt/wulinyang/to_push/gensearchrec/sid/data/embeddings/station_video_4B_sft_text_format/text_format_embedding.npy",
+  "meta_jsonl": "/mnt/wulinyang/to_push/gensearchrec/sid/data/embeddings/station_video_4B_sft_text_format/meta.jsonl",
+  "results_root": "./results",
+  "run_name": null,
+  "device": "cuda:0",
+  "batch_size": 1024,
+  "num_workers": 4,
+  "seed": 2024,
+
+  "train_defaults": {
+    "epochs": 40,
+    "lr": 0.001,
+    "eval_step": 1,
+    "learner": "AdamW",
+    "lr_scheduler_type": "constant",
+    "warmup_epochs": 0,
+    "weight_decay": 0.0,
+    "save_limit": 5,
+
+    "dropout_prob": 0.0,
+    "bn": false,
+    "loss_type": "mse",
+    "quant_loss_weight": 1.0,
+    "beta": 0.25,
+
+    "kmeans_init": true,
+    "kmeans_init_max_samples": 200000,
+    "kmeans_init_seed": 0,
+    "kmeans_init_dedup": true,
+    "kmeans_iters": 20,
+    "sk_iters": 50,
+
+    "rqkmeans": {
+      "num_levels": 4,
+      "codebook_size": [1024],
+      "uniform": false,
+      "sinkhorn_iters": 2,
+      "sinkhorn_tau": null,
+      "sinkhorn_topk": 16,
+      "sinkhorn_seed": 42
+    },
+    "rqkmeans_opq": {
+      "rq_levels": 3,
+      "rq_codebook_size": 1024,
+      "uniform": false,
+      "sinkhorn_iters": 20,
+      "sinkhorn_tau": null,
+      "sinkhorn_topk": 16,
+      "sinkhorn_seed": 42,
+      "opq_subquantizers": 2,
+      "opq_codebook_size": 1024,
+      "opq_niter": 2,
+      "pq_niter": 5
+    },
+
+    "rqvae": {
+      "num_emb_list": [1024, 1024, 1024, 1024, 256],
+      "e_dim": 128,
+      "layers": [512, 256, 128],
+      "sk_epsilons": [0.0, 0.0, 0.0, 0.003, 0.0],
+      "ema_codebook": true,
+      "ema_decay": 0.99,
+      "ema_eps": 1e-5
+    },
+    "rqvae_opq": {
+      "num_emb_list": [1024, 1024, 1024, 1024],
+      "e_dim": 128,
+      "layers": [512, 256, 128],
+      "ema_codebook": true,
+      "ema_decay": 0.99,
+      "ema_eps": 1e-5
+    }
+  },
+
+  "infer_defaults": {
+    "use_sk": true
+  },
+  "balanced_kmeans_init": {
+    "enabled": false,
+    "domains": ["station", "video"],
+    "per_domain": null,
+    "seed": null
+  },
+
+  "strategies": [
+    {
+      "name": "rqvae",
+      "enabled": true,
+      "train": true,
+      "infer": true,
+      "train_overrides": {},
+      "infer_overrides": {}
+    },
+    {
+      "name": "rqvae_opq",
+      "enabled": true,
+      "train": true,
+      "infer": true,
+      "train_overrides": {},
+      "infer_overrides": {}
+    },
+    {
+      "name": "rqkmeans",
+      "enabled": true,
+      "train": true,
+      "infer": true,
+      "train_overrides": {
+        "rqkmeans": {
+          "uniform": true
+        }
+      },
+      "infer_overrides": {}
+    },
+    {
+      "name": "rqkmeans_opq",
+      "enabled": true,
+      "train": true,
+      "infer": true,
+      "train_overrides": {
+        "rqkmeans_opq": {
+          "uniform": false
+        }
+      },
+      "infer_overrides": {}
+    }
+  ]
+}

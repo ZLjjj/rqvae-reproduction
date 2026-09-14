@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# PyTorch
+*.pth
+*.pt
+
+# 数据文件（太大）
+*.npy
+*.npz
+
+# 结果文件（可选择性提交）
+results/
+results_*/
+checkpoints/
+
+# 但保留完美复现的结果
+!results_rqvae_l1_sinkhorn/task3_correct/indices/metrics.json
+!results_rqvae_l1_sinkhorn/task3_correct/indices/indices.jsonl
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 临时文件
+*.tmp
+*.log
+test_*.py
+check_*.py
+inspect_*.py
+
+# 但保留文档
+!*.md
+!README.md
+!REPRODUCTION_GUIDE.md

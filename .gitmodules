@@ -1,0 +1,3 @@
+[submodule "llama-factory"]
+	path = llama-factory
+	url = git@git.n.xiaomi.com:misearch/llama-factory.git
