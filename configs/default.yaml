@@ -1,0 +1,32 @@
+# RQVAE Training Configuration
+
+# Model hyperparameters
+model:
+  in_channels: 3
+  hidden_channels: 128
+  num_residual_blocks: 2
+  codebook_size: 512
+  codebook_dim: 64
+
+# Training hyperparameters
+training:
+  batch_size: 32
+  learning_rate: 0.0001
+  num_epochs: 100
+  weight_decay: 0.0
+
+# Data configuration
+data:
+  dataset_path: "./data"
+  image_size: 256
+  num_workers: 4
+
+# Checkpointing
+checkpoint:
+  save_interval: 10  # Save every N epochs
+  save_dir: "./checkpoints"
+
+# Logging
+logging:
+  log_interval: 100  # Log every N steps
+  use_wandb: false
