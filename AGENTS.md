@@ -47,7 +47,28 @@ new_pro/
 
 ### 当前状态
 
-<!-- 每次重大迭代后更新这部分 -->
+**阶段**: 开发中
+
+**进度**: 基础框架已搭建，可以开始实现具体模块
+
+**最近改动** (2026-09-14): 
+- ✅ 创建了基础项目结构（models、configs、tests）
+- ✅ 实现了 Encoder 模块（包含 ResidualBlock 和下采样层）
+- ✅ 添加了配置文件模板（default.yaml）
+- ✅ 编写了基础单元测试（test_encoder.py）
+- ✅ 配置了依赖项（requirements.txt）
+
+**已实现的模块**:
+- `models/encoder.py`: 图像编码器
+  - ResidualBlock：基础残差块
+  - 两层下采样（4x 空间降维）
+  - 输入: (B, 3, 256, 256) → 输出: (B, 512, 64, 64)
+
+**下一步优先级**: 
+1. 实现 Decoder 模块（与 Encoder 对称的上采样结构）
+2. 实现 Residual Quantization 模块（多层量化器）
+3. 实现完整的 RQVAE 模型（组合 Encoder、Quantizer、Decoder）
+4. 添加训练脚本和数据加载器
 
 **最后更新**: 2026-09-14
 
